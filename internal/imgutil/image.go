@@ -1,8 +1,12 @@
 package imgutil
 
 import (
+	"fmt"
 	"image"
+	"io/ioutil"
 	"os"
+	"os/exec"
+	"path/filepath"
 
 	"image/color"
 	"image/draw"
@@ -52,6 +56,12 @@ func UniformRGBA(r image.Rectangle, c color.Color) *image.RGBA {
 	return img
 }
 
+func CopyRGBA(src *image.RGBA) *image.RGBA {
+	dst := image.NewRGBA(src.Bounds())
+	copy(dst.Pix, src.Pix)
+	return dst
+}
+
 func SavePNG(path string, img image.Image) error {
 	file, err := os.Create(path)
 	if err != nil {
@@ -61,8 +71,26 @@ func SavePNG(path string, img image.Image) error {
 	return png.Encode(file, img)
 }
 
-func CopyRGBA(src *image.RGBA) *image.RGBA {
-	dst := image.NewRGBA(src.Bounds())
-	copy(dst.Pix, src.Pix)
-	return dst
+func SaveGIFImageMagick(path string, frames []image.Image, delay, lastDelay int) error {
+	dir, err := ioutil.TempDir("", "")
+	if err != nil {
+		return err
+	}
+	for i, im := range frames {
+		path := filepath.Join(dir, fmt.Sprintf("%06d.png", i))
+		_ = SavePNG(path, im)
+	}
+	args := []string{
+		"-loop", "0",
+		"-delay", fmt.Sprint(delay),
+		filepath.Join(dir, "*.png"),
+		"-delay", fmt.Sprint(lastDelay - delay),
+		filepath.Join(dir, fmt.Sprintf("%06d.png", len(frames)-1)),
+		path,
+	}
+	cmd := exec.Command("convert", args...)
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return os.RemoveAll(dir)
 }

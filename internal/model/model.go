@@ -37,9 +37,11 @@ func NewModel(target image.Image, background color.Color, size, numWorker int) *
 		scale = float64(size) / float64(w)
 	} else {
 		sh = size
-		sw = int(float64(size) / aspect)
+		sw = int(float64(size) * aspect)
 		scale = float64(size) / float64(h)
 	}
+
+	logger.Info("输出的大小", zap.Int("sw", sw), zap.Int("sh", sh))
 
 	model := Model{
 		Sw:         sw,
@@ -50,7 +52,6 @@ func NewModel(target image.Image, background color.Color, size, numWorker int) *
 		Current:    imgutil.UniformRGBA(target.Bounds(), background.NRGBA()),
 	}
 	model.Score = core.DifferenceFull(model.Target, model.Current)
-	logger.Info("初始分数", zap.Float64("score", model.Score))
 	model.Context = model.newContext()
 
 	for i := 0; i < numWorker; i++ {
@@ -67,6 +68,26 @@ func (model *Model) newContext() *gg.Context {
 	dc.SetColor(model.Background.NRGBA())
 	dc.Clear()
 	return dc
+}
+
+func (model *Model) Frames(scoreDelta float64) []image.Image {
+	var result []image.Image
+	dc := model.newContext()
+	result = append(result, imgutil.Image2RGBA(dc.Image()))
+	previous := 10.0
+	for i, shape := range model.Shapes {
+		c := model.Colors[i]
+		dc.SetRGBA255(c.R, c.G, c.B, c.A)
+		shape.Draw(dc, model.Scale)
+		dc.Fill()
+		score := model.Scores[i]
+		delta := previous - score
+		if delta >= scoreDelta {
+			previous = score
+			result = append(result, imgutil.Image2RGBA(dc.Image()))
+		}
+	}
+	return result
 }
 
 func (model *Model) Step(shapeType core.ShapeType, alpha, repeat int) int {

@@ -1,7 +1,6 @@
 package core
 
 import (
-	"fmt"
 	"image"
 	"math/rand"
 	"time"
@@ -57,10 +56,10 @@ func (worker *Worker) BestHillClimbState(shapeType ShapeType, alpha, n, age, m i
 
 	for i := 0; i < m; i++ {
 		state := worker.BestRandomState(shapeType, alpha, n)
-		before := state.Energy()
+		// before := state.Energy()
 		state = HillClimb(state, age).(*State)
 		energy := state.Energy()
-		fmt.Printf("%dx random: %f -> %dx hill climb: %f\n", n, before, age, energy)
+		// fmt.Printf("%dx random: %f -> %dx hill climb: %f\n", n, before, age, energy)
 		if i == 0 || energy < bestEnergy {
 			bestEnergy = energy
 			bestState = state
@@ -98,8 +97,6 @@ func (worker *Worker) RandomState(shapeType ShapeType, alpha int) *State {
 		return NewState(worker, NewRandomCircle(worker), alpha)
 	case ShapeTypeRotatedRectangle:
 		return NewState(worker, NewRandomRotatedRectangle(worker), alpha)
-	case ShapeTypeQuadratic:
-		return NewState(worker, NewRandomQuadratic(worker), alpha)
 	case ShapeTypeRotatedEllipse:
 		return NewState(worker, NewRandomRotatedEllipse(worker), alpha)
 	case ShapeTypePolygon:

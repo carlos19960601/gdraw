@@ -49,7 +49,7 @@ func App() *cli.App {
 		&cli.IntFlag{
 			Name:    "mode",
 			Aliases: []string{"m"},
-			Usage:   "0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=beziers 7=rotatedellipse 8=polygon",
+			Usage:   "0=combo 1=triangle 2=rect 3=ellipse 4=circle 5=rotatedrect 6=rotatedellipse 7=polygon",
 			Value:   1,
 		},
 		&cli.IntFlag{
@@ -154,6 +154,12 @@ func App() *cli.App {
 						switch ext {
 						case ".png":
 							err = imgutil.SavePNG(path, model.Context.Image())
+							if err != nil {
+								return err
+							}
+						case ".gif":
+							frames := model.Frames(0.001)
+							err = imgutil.SaveGIFImageMagick(path, frames, 50, 250)
 							if err != nil {
 								return err
 							}
